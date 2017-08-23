@@ -52,15 +52,15 @@ users:
     groups: [ sudo, docker ]
 hostname: $newhost
 networkd:
-units:
-  - name: 10-static.network
-    contents: |
-    [Match]
-    Name=enp0s3
-    [Network]
-    DNS=61.88.88.88 139.130.4.4
-    Address=$newip/24
-    Gateway=$(echo $newip | cut -d. -f4 --complement).1
+  units:
+    - name: 10-static.network
+      contents: |
+      [Match]
+      Name=enp0s3
+      [Network]
+      DNS=61.88.88.88 139.130.4.4
+      Address=$newip/24
+      Gateway=$(echo $newip | cut -d. -f4 --complement).1
 EOF_core
 
 echo
