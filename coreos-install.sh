@@ -56,4 +56,5 @@ sleep 10
 sudo chmod 755 /usr/bin/coreos-install
 sudo /usr/bin/coreos-install -d /dev/sda -c config.yml -C alpha
 
-echo -e "$(tput setaf 6)Installation has finished, please remove CoreOS live CD and reboot VM.$(tput sgr0)"
+echo && echo -e "$(tput setaf 6)Installation has finished, please remove CoreOS live CD and reboot VM.$(tput sgr0)"
+echo
