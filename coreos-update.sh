@@ -1,7 +1,15 @@
 #!/bin/bash
 
+if [ ! "${USER}" = "root" ] ; then
+   echo -e "!! Enter $(tput setaf 1)sudo $0$(tput sgr0) to update !!"
+   echo && exit 0 ; fi
+
+# get discovery url
+if [ ! -f etcd.key ] ; then
+   curl https://discovery.etcd.io/new\?size=3 -o ./etcd.key; fi
+
 echo && echo
-read -p "Please enter CoreOS node number: " new
+read -p "Please enter new node number: " new
 
 if ! [ $new -eq $new ] 2>/dev/null ; then
         echo -e "$(tput setaf 1)!! Exit -- Sorry, integer only !!$(tput sgr0)"
@@ -11,31 +19,59 @@ if [ -z $new ] || [ $new -lt 1 ] || [ $new -gt 254 ] ; then
         exit 1; fi
 
 new=$(echo $new | sed 's/^0*//')
-subnet=192.168.100.
 
-cd ~
+oldhost=$(hostname)
+oldip=$(ifconfig | grep enp0s3 -A 1 | grep inet | awk '{ print $2 }')
+
+newhost=$(echo $oldhost | cut -d- -f1)-$new
+newip=$(echo $oldip | cut -d. -f4 --complement).$new
+
+read -p "Change hostname? [enter] for no change: " new
+if [ ! -z $new ] ; then  newhost=$new-$(echo $newhost | cut -d- -f2) ; fi
+
+# update config.yml
+sudo cp /var/lib/coreos-install/user_data config.yml
+sudo sed -i "s/$oldhost/$newhost/" config.yml
+
+discoveryUrl=$(cat etcd.key)
+
+cat <<EOF_core >> config.yml 
+coreos:
+  etcd2:
+    name: $newhost
+    discovery: $discoveryUrl
+    advertise-client-urls: http://$newip:2379,http://$newip:4001
+    initial-advertise-peer-urls: http://$newip:2380
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    listen-peer-urls: http://$newip:2380
+
+    units:
+    - name: etcd2.service
+      command: start
+
+EOF_core
+
 # write static.network
+
 cat <<EOF_netw > netw
 [Match]
-        Name=enp0s8
+   Name=enp0s3
+
 [Network]
-        DNS=198.142.152.164
-        Address=$subnet$new/24
+   DNS=61.88.88.88 139.130.4.4
+   Address=$newip/24
+   Gateway=$(echo $newip | cut -d. -f4 --complement).1
+
 EOF_netw
 
-# update hostname and ip address in coreos' user_data
-sudo cp /var/lib/coreos-install/user_data config.yml
-oldhost=$(sudo cat config.yml | grep hostname: | cut -d: -f2 | cut -c 1-)
-oldip=$(sudo cat config.yml | grep listen-peer | cut -d: -f3 | cut -c 3-)
-sudo sed -i -e "s/$oldhost/core$new/" -e "s/$oldip/$subnet$new/g" config.yml
-
-echo $oldip ">>" $subnet$new
-echo $oldhost ">>" core$new
-echo "$(tput setaf 6) !! Reboot in 10 seconds. Update node name from $oldhost to core$new !! $(tput sgr0)"
-
+echo
+echo "$(tput setaf 6)!! Update node name from $oldhost to $newhost !!"
+echo "!! Update node IP from $oldip to $newip !! $(tput sgr0)"
+echo && echo System will restart in 10 seconds
 sleep 10
-sudo mv config.yml /var/lib/coreos-install/user_data
-sudo mv netw /etc/systemd/network/static.network
+
+mv config.yml /var/lib/coreos-install/user_data
+mv netw /etc/systemd/network/static.network
 
 echo Restarting ........
-sudo shutdown -r now
+shutdown -r now
