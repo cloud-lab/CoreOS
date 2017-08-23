@@ -47,9 +47,7 @@ hostname: CoreOS-00
 EOF_core
 
 echo
-echo "$(tput setaf 6)Install vm $newhost into HDD"
-echo "with new user $user and"
-echo "new IP address $newip ......$(tput sgr0)"
+echo "$(tput setaf 6)Installing CoreOS into HDD with user name - $user$(tput sgr0)"
 echo && echo System will restart in 10 seconds
 echo
 sleep 10
@@ -58,4 +56,4 @@ sleep 10
 sudo chmod 755 /usr/bin/coreos-install
 sudo /usr/bin/coreos-install -d /dev/sda -c config.yml -C alpha
 
-echo -e "$(tput setaf 6)Installation finishes, please remove CoreOS live CD and reboot VM.$(tput sgr0)"
+echo -e "$(tput setaf 6)Installation has finished, please remove CoreOS live CD and reboot VM.$(tput sgr0)"
