@@ -51,17 +51,17 @@ users:
     passwd: $password
     groups: [ sudo, docker ]
 hostname: $newhost
+networkd:
+  units:
+    - name: 10-static.network
+      contents: |
+        [Match]
+          Name=enp0s3
+	[Network]
+          DNS=61.88.88.88 139.130.4.4
+          Address=$newip/24
+	  Gateway=$(echo $newip | cut -d. -f4 --complement).
 EOF_core
-
-# write static.network
-cat <<EOF_netw > netw
-[Match]
-        Name=enp0s3
-[Network]
-        DNS=61.88.88.88 139.130.4.4
-        Address=$newip/24
-	Gateway=$(echo $newip | cut -d. -f4 --complement).1
-EOF_netw
 
 echo
 echo "$(tput setaf 6)Install vm $newhost into HDD"
@@ -69,17 +69,9 @@ echo "with new user $user and"
 echo "new IP address $newip ......$(tput sgr0)"
 echo && echo System will restart in 10 seconds
 echo
-
-cat config.yml
-cat netw
-exit 0
-
 sleep 10
 
 # run installation
-sudo mv netw /etc/systemd/network/static.network
-sudo systemctl restart systemd-networkd
-
 sudo chmod 755 /usr/bin/coreos-install
 sudo /usr/bin/coreos-install -d /dev/sda -c config.yml -C alpha
 
