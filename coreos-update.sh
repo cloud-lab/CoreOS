@@ -20,8 +20,9 @@ if [ -z $new ] || [ $new -lt 1 ] || [ $new -gt 254 ] ; then
 
 new=$(echo $new | sed 's/^0*//')
 
+intf=$(ifconfig | grep -m1 ^e | awk -F: '{print $1 }')
 oldhost=$(hostname)
-oldip=$(ifconfig | grep enp0s3 -A 1 | grep inet | awk '{ print $2 }')
+oldip=$(ifconfig | grep $intf -A 1 | grep inet | awk '{ print $2 }')
 
 newhost=$(echo $oldhost | cut -d- -f1)-$new
 newip=$(echo $oldip | cut -d. -f4 --complement).$new
@@ -55,7 +56,7 @@ EOF_core
 
 cat <<EOF_netw > netw
 [Match]
-   Name=enp0s3
+   Name=$intf
 
 [Network]
    DNS=61.88.88.88 139.130.4.4
